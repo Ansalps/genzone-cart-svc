@@ -3,6 +3,7 @@ package cart;
 option go_package="./pkg/pb";
 service CartService{
     rpc AddToCart(CreateCartRequest) returns (CreateCartResponse) {}
+    rpc GetCart (GetCartRequest) returns (GetCartResponse) {}
 }
 
 message CreateCartRequest{
@@ -14,4 +15,21 @@ message CreateCartResponse{
     int64 status=1;
     string error=2;
     int64 id=3;
+}
+
+message Cart {
+    int64 id = 1;  // Cart ID
+    string user_id = 2;  // User ID (foreign key)
+    string product_id = 3;
+    int64 qty = 4;
+    double price = 5;
+    double amount = 6;
+}
+message GetCartRequest {
+  string userid = 1;
+}
+message GetCartResponse{
+    int64 status=1;
+    string error=2;
+    repeated Cart carts = 3;  // List of carts
 }

@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	cartpb "github.com/Ansalps/genzone-cart-svc/pkg/pb"
 	productpb "github.com/Ansalps/genzone-product-svc/pkg/pb"
 	"google.golang.org/grpc"
+	"gorm.io/gorm"
 )
 
 type Server struct {
@@ -64,6 +66,40 @@ func getProductDetails(productID string) (*productpb.GetProductResponse, error) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get product details: %v", err)
 	}
-	fmt.Println("price",response.Price)
+	fmt.Println("price", response.Price)
 	return response, nil
+}
+
+func (s *Server) GetCart(ctx context.Context, req *cartpb.GetCartRequest) (*cartpb.GetCartResponse, error) {
+	fmt.Println("is it entering in get product")
+	userID := req.GetUserid()
+	log.Printf("Received request for product ID: %s", userID)
+	var carts []models.Cart
+	if err := s.H.DB.Where("user_id = ?", userID).Find(&carts).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &cartpb.GetCartResponse{
+				Status: http.StatusBadRequest,
+				Error:  "no cart record exist for this user",
+			}, nil
+		}
+	}
+	fmt.Println("product object", carts)
+	//fmt.Println("product price in get product",product.Price)
+	var response cartpb.GetCartResponse
+	for _, cart := range carts {
+		carpbCart:=&cartpb.Cart{
+			Id: int64(cart.ID),
+			UserId: cart.UserID,
+			ProductId: cart.ProductID,
+			Qty: int64(cart.Qty),
+			Price: cart.Price,
+			Amount: cart.Amount,
+		}
+		response.Carts=append(response.Carts,carpbCart)
+	}
+	return &cartpb.GetCartResponse{
+			Status:http.StatusOK,
+			Carts: response.Carts,
+	}, nil
+
 }
