@@ -9,15 +9,14 @@ import (
 
 	"github.com/Ansalps/genzone-cart-svc/pkg/db"
 	"github.com/Ansalps/genzone-cart-svc/pkg/models"
-	"github.com/Ansalps/genzone-cart-svc/pkg/pb"
 	cartpb "github.com/Ansalps/genzone-cart-svc/pkg/pb"
-	productpb "github.com/Ansalps/genzone-product-svc/tree/main/pkg/pb"
+	productpb "github.com/Ansalps/genzone-product-svc/pkg/pb"
 	"google.golang.org/grpc"
 )
 
 type Server struct {
 	H db.Handler
-	pb.UnimplementedCartServiceServer
+	cartpb.UnimplementedCartServiceServer
 }
 
 func (s *Server) AddToCart(ctx context.Context, req *cartpb.CreateCartRequest) (*cartpb.CreateCartResponse, error) {
@@ -33,10 +32,10 @@ func (s *Server) AddToCart(ctx context.Context, req *cartpb.CreateCartRequest) (
 	}
 	// Calculate total amount
 	cart.Price = product.Price
-	totalAmount := product.Price * req.Quantity
+	totalAmount := product.Price * float64(req.Quantity)
 	cart.Amount = totalAmount
 	//var product models.Product
-	if result := s.H.DB.Where(&cart); result.Error != nil {
+	if result := s.H.DB.Create(&cart); result.Error != nil {
 		return &cartpb.CreateCartResponse{
 			Status: http.StatusConflict,
 			Error:  result.Error.Error(),
@@ -65,6 +64,6 @@ func getProductDetails(productID string) (*productpb.GetProductResponse, error) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to get product details: %v", err)
 	}
-
+	fmt.Println("price",response.Price)
 	return response, nil
 }
